@@ -1,0 +1,409 @@
+
+Install Node.js
+	https://nodejs.org/en
+	Download Node.js (LTS)
+	Node.js installation automatically install npm
+	Open Command Prompt
+		node -v
+		npm -v
+	
+Install Angular CLI
+	Command Line Interface used to create angular applications.
+	Open Command Prompt
+		npm install -g @angular/cli
+		ng --version
+		
+Install VS Code
+	https://code.visualstudio.com/download
+	
+Create new Folder d:/gayu/AngularProjects
+
+Open vscode from Command Prompt
+	navigate to that folder in command prompt
+	code .
+	
+Create new Angular App from vscode.
+	Open Terminal
+	ng new student-ui
+	suppose any error 
+		Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted
+	for zoneless - N
+	select css
+	N for SSR (Server Side Rendering)
+
+Run first Angular App
+	Open Terminal
+	cd student-ui
+	ng serve
+	Open Browser
+	http://localhost:4200
+
+
+
+Add Bootstrap in our anglar app.
+	Bootstrap is css frame work used to develop responsive layouts in web applications.
+	Open New Terminal
+	go to your app folder
+	npm install bootstrap --save
+	https://getbootstrap.com/
+		Include via CDN
+		copy the link tag
+	Open index.html
+		paste it inside head tag.
+
+Test bootstrap successfully integrated
+	open app.html -> Delete all -> Copy and paste below line
+		<h1 class="text-center">{{title}}</h1>
+	open browser and check the title is centered.
+
+	Open app.ts 
+		import { Component, signal } from '@angular/core';
+		import { RouterOutlet } from '@angular/router';
+
+		@Component({
+		  selector: 'app-root',
+		  imports: [RouterOutlet],
+		  templateUrl: './app.html',
+		  styleUrl: './app.css'
+		})
+		export class App {
+		  protected readonly title = 'student-ui';
+		}
+
+
+go to your app folder (student-ui)
+
+ng g c students-read 
+ng g c student-create
+ng g c student-update
+ng g c student-read
+ng g c student-home
+ng g s student-service 
+ng g class student
+
+student.ts
+	export class Student {
+		id!: number;
+		name!: string;
+		dept!: string;
+		
+	}
+
+styles.css
+.footer{
+    position: absolute;
+    bottom:0;
+    width:100%;
+    height:40px;
+    background-color: blue;
+    text-align: center;
+    color:white;
+}
+
+app.routes.ts
+
+import { Routes } from '@angular/router';
+import { StudentCreate } from './student-create/student-create';
+import { StudentsRead } from './students-read/students-read';
+import { StudentUpdate } from './student-update/student-update';
+import { StudentRead } from './student-read/student-read';
+import { StudentHome } from './student-home/student-home';
+export const routes: Routes = [
+    {path:'students-read',component:StudentsRead},
+    {path:'student-create',component:StudentCreate},
+    {path:'student-update',component:StudentUpdate},
+    {path:'student-read',component:StudentRead},
+    {path:'',component:StudentHome}
+];
+
+app.config.ts
+
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter } from '@angular/router';
+
+import { routes } from './app.routes';
+import { provideHttpClient } from '@angular/common/http';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes),provideHttpClient()
+  ]
+};
+
+app.ts 
+
+import { Component, signal } from '@angular/core';
+import { RouterLink,RouterOutlet } from '@angular/router';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet,RouterLink],
+  templateUrl: './app.html',
+  styleUrl: './app.css'
+})
+export class App {
+  protected readonly title = 'student-ui';
+}
+
+app.html
+
+<nav class="navbar navbar-expand-sm bg-primary navbar-dark">
+  <ul class="navbar-nav">
+    <li class="nav-item">
+      <a routerLink="" routerLinkActive="active" class="nav-link">Home</a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="Students-read" routerLinkActive="active" class="nav-link">Read Students</a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="student-create" routerLinkActive="active" class="nav-link">Create Student</a>
+    </li>
+  </ul>
+</nav>
+<div class = "container">
+<router-outlet></router-outlet>
+</div>
+<footer class = "footer">
+  <div class="container">
+    <span>All Rights Reserved 2025 gayathri pazhanivel</span>
+  </div>
+</footer>
+
+
+
+student-service.ts
+
+
+  import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Student } from './student';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class StudentService {
+  private baseURL = "http://localhost:8080/students/";
+constructor(private httpClient:HttpClient) { }
+  
+  readStudents(): Observable<Student[]>{
+    return this.httpClient.get<Student[]>(this.baseURL+"readstudents");
+  }
+  
+  createStudent(student: Student): Observable<Object>{
+    return this.httpClient.post(this.baseURL + "createstudent", student,{responseType:'text'});
+  }
+
+  readStudent(id: number): Observable<Student>{
+    let queryParams = new HttpParams();
+    queryParams = queryParams.set('id',id);
+    return this.httpClient.get<Student>(this.baseURL + "readstudent",{params:queryParams});
+  }
+
+  updateStudent(id: number, student: Student): Observable<Object>{
+  const params = {
+        id: id
+      };
+    return this.httpClient.put(this.baseURL + "updatestudent", student , {responseType:'text', params});
+  }
+  deleteStudent(id: number): Observable<Object>{
+    const params = {
+        id: id
+      };
+    return this.httpClient.delete(this.baseURL + "deletestudent", {responseType:'text', params});
+  }
+}
+
+
+
+students-read.ts 
+
+import { Component, OnInit } from '@angular/core';
+import { Student } from '../student';
+import { StudentService } from '../student-service';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-students-read',
+  imports: [CommonModule],
+  templateUrl: './students-read.html',
+  styleUrl: './students-read.css'
+})
+export class StudentsRead implements OnInit {
+  students!: Student[];
+  constructor(private studentService: StudentService,
+    private router: Router) { }
+  ngOnInit(): void {
+    this.readStudents();
+  }
+  private readStudents(){
+    this.studentService.readStudents().subscribe(data => {
+      this.students = data;
+    });
+  }
+  readStudent(id: number){
+    this.router.navigate(['student-read'], {queryParams: { 'id': id } });
+  }
+  updateStudent(id: number){
+    this.router.navigate(['student-update'], {queryParams: { 'id': id } });
+  }
+  deleteStudent(id: number){
+    this.studentService.deleteStudent(id).subscribe( data => {
+      this.readStudents();
+    })
+  }
+}
+
+students-read.html
+
+<h2> Student List</h2>
+<table class = "table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th> Name</th>
+            <th> Dept</th>
+            <th> Actions </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor = "let student of students" >
+            <td>{{student.id}}</td>
+            <td> {{ student.name }} </td>
+            <td> {{ student.dept }} </td>
+            
+            <td>
+                <button (click) = "updateStudent(student.id)" class = "btn btn-info"> Update</button>
+                <button (click) = "deleteStudent(student.id)" class = "btn btn-danger" style="margin-left: 10px"> Delete</button>
+                <button (click) = "readStudent(student.id)" class = "btn btn-info" style="margin-left: 10px"> View</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+student-create.ts
+
+import { Component } from '@angular/core';
+import { Student } from '../student';
+import { StudentService } from '../student-service';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-student-create',
+  imports: [FormsModule],
+  templateUrl: './student-create.html',
+  styleUrl: './student-create.css'
+})
+export class StudentCreate {
+  student: Student= new Student();
+  constructor(private studentService:StudentService, private router:Router){
+  }
+  saveStudent(){
+    this.studentService.createStudent(this.student).subscribe(data =>{
+      this.router.navigate(['/students-read']);
+    });
+    
+  }
+  onSubmit(){
+    this.saveStudent();
+  }
+}
+
+
+student-create.html
+
+<div class="col-md-8 offset-md-3">
+    <h3>Create Student</h3>
+    <form (ngSubmit) = "onSubmit()">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type = "text" class="form-control" id="name" [(ngModel)] = "student.name" name="name">
+        </div>
+        <div class="form-group">
+            <label for="dept">Dept</label>
+            <input type = "text" class="form-control" id="dept" [(ngModel)] = "student.dept" name="dept">
+        </div>
+       
+        <button class="btn btn-success" type="submit">Submit</button>
+    </form>
+</div>
+
+student-update.ts
+
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Student} from '../student';
+import { StudentService } from '../student-service';
+import { ActivatedRoute, Router } from '@angular/router';
+
+@Component({
+  selector: 'app-student-update',
+  imports: [FormsModule],
+  templateUrl: './student-update.html',
+  styleUrl: './student-update.css'
+})
+export class StudentUpdate implements OnInit {
+  id!: number;
+  student: Student = new Student();
+  constructor(private studentService: StudentService,
+    private route: ActivatedRoute,
+    private router: Router) { }
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      this.id = params['id'];
+    });
+    this.studentService.readStudent(this.id).subscribe(data => {
+      this.student = data;
+    });
+  }
+  onSubmit(){
+    this.studentService.updateStudent(this.id, this.student).subscribe( data =>{
+      this.goToStudentList();
+    }
+    );
+  }
+  goToStudentList(){
+    this.router.navigate(['/students-read']);
+  }
+}
+
+student-update.html 
+
+<div class="col-md-6 offset-md-3">
+    <h3> Update Student </h3>
+    <form (ngSubmit) = "onSubmit()">
+         <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class ="form-control" id = "name"
+                [(ngModel)] = "student.name" name = "name">
+        </div>
+        <div class="form-group">
+            <label for="dept">Dept</label>
+            <input type="text" class ="form-control" id = "dept"
+                [(ngModel)] = "student.dept" name = "dept">
+        </div>
+       
+        <button class = "btn btn-success" type ="submit">Submit</button>
+    </form>
+</div>
+
+student-read.html
+
+<h3> View Student Details</h3>
+<div>
+    <div>
+        <label> <b> Name: </b></label> {{student.name}}
+    </div>
+    <div>
+        <label> <b> Dept: </b></label> {{student.dept}}
+    </div>
+   
+</div>
+
+student-home.html
+
+<h1>Welcome to my Student Info</h1>
